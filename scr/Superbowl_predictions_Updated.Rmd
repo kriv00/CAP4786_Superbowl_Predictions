@@ -1,0 +1,111 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Exploring Betting Data Summary
+
+Data set: 
+
+## Install & load libraries
+```{r}
+#Install tidyverse
+#install.packages("tidyverse")
+
+#load libraries
+library(tidyverse)
+library(ggplot2)
+```
+
+## Import Dataset CSV
+```{r}
+# Importing the csv file
+originalStats <- read_csv("spreadspoke_scores.csv") %>% subset(select = -c(weather_detail)) 
+
+# reformatting date to read as a date
+originalStats$schedule_date <- as.Date(originalStats$schedule_date, "%m/%d/%Y")
+originalStats <- filter(originalStats, schedule_date > as.Date("1975-12-07"))
+
+# Adding outcome column
+originalStats$outcome <- ifelse(originalStats$score_home > originalStats$score_away, "W", "L")
+
+originalStats
+```
+
+```{r}
+# Import Dataset CSV
+qbStats <- read_csv("qbstats.csv") 
+
+qbStats
+```
+
+```{r}
+#Setting up the new Data that only includes KCC and TBB
+onlyKC_TBData <- filter(originalStats, team_home %in% c("Tampa Bay Buccaneers", "Kansas City Chiefs"),
+               team_away %in% c("Tampa Bay Buccaneers", "Kansas City Chiefs")) %>% drop_na(score_home)
+
+footballData <- filter(originalStats, team_home %in% c("Tampa Bay Buccaneers", "Kansas City Chiefs")) %>% drop_na(score_home)
+
+onlyKC_TBData
+footballData
+```
+
+
+## Bar chart 
+
+```{r}
+bc <- ggplot(data = onlyKC_TBData, mapping = aes(x = outcome, y = score_home, fill = team_home)) + 
+  geom_col(color = "Black") +
+  labs(title = "Points Scored by Game Outcome",
+       subtitle = "Source: NFL Scources & Betting Data - Kaggle",
+       x = "Outcome",
+       y = "Points Scored")
+
+# changing the color
+bc + scale_fill_manual(values = c("gold", "red3"))
+```
+
+## Violin Plot
+
+```{r}
+vp <- ggplot(data = onlyKC_TBData, mapping = aes(x = team_home, y = score_home)) +
+        geom_violin(aes(fill = team_home), show.legend = FALSE)  +
+        stat_summary(fun.y = mean, geom = "point", size = 2, color = "black") +
+  labs(title = "Distribution of Points Scored by Team",
+       subtitle = "Source: NFL Scources & Betting Data - Kaggle",
+       x = "Team",
+       y = "Points Scored")
+
+# changing the color
+vp + scale_fill_manual(values = c("lightslateblue", "firebrick"))
+```
+
+
+
+```{r}
+# Import Dataset CSV
+qbGameStats <- read_csv("qb_gamestats.csv") 
+
+lastWeeks_qbGameStats <- filter(qbGameStats, Week >= 16) 
+
+#lastWeeks_qbGameStats$Week <- as.character(lastWeeks_qbGameStats$Week)
+
+lastWeeks_qbGameStats
+```
+
+
+## scatterplot 
+
+```{r}
+sp <- ggplot(data = lastWeeks_qbGameStats, mapping = aes(x = Week, y = TD)) +
+        geom_line(aes(color = Person), size = 2.5) +
+        geom_point(size = 2.5) +
+        geom_hline(aes(yintercept = mean(TD)), color = "blue", linetype = "dashed") +
+  labs(title = "Touchdowns Thrown by Player per Game",
+       subtitle = "Source: Brady & Mahomes Stats - Pro Football Reference",
+       x = "Week",
+       y = "Completed Touchdowns")
+
+sp + scale_color_manual(values=c("yellowgreen", "firebrick2"))
+```
+
